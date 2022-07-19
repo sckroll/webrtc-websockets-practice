@@ -1,6 +1,7 @@
 import express from 'express';
 import http from 'http';
-import SocketIO from 'socket.io';
+import { Server } from 'socket.io';
+import { instrument } from '@socket.io/admin-ui';
 
 const app = express();
 
@@ -22,7 +23,18 @@ app.get('/*', (req, res) => res.redirect('/'));
 // 이로써 같은 localhost:3000 주소에서 HTTP와 웹소켓 요청을 동시에 처리 가능 
 // (WS만 연결시킬 수 있음, 즉 HTTP는 필수가 아님)
 const httpServer = http.createServer(app);
-const wsServer = SocketIO(httpServer);
+// const wsServer = SocketIO(httpServer);
+const wsServer = new Server(httpServer, {
+  cors: {
+    // 온라인 데모용 URL
+    origin: ['https://admin.socket.io'],
+    credentials: true
+  }
+});
+
+instrument(wsServer, {
+  auth: false
+});
 
 // public rooms를 반환하는 함수
 function publicRooms() {
