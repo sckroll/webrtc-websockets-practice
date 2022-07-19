@@ -1,54 +1,36 @@
-// DOM 요소 받기
-const msgList = document.querySelector('ul');
-const nickForm = document.querySelector('#nick');
-const msgForm = document.querySelector('#message');
+const socket = io();
 
-// 메시지 타입과 값을 객체로 만들고 문자열로 만드는 함수
-const makeMessage = (type, payload) => {
-  const msg = { type, payload };
-  return JSON.stringify(msg);
+const welcome = document.getElementById('welcome');
+const form = welcome.querySelector('form');
+const room = document.getElementById('room');
+
+// room 요소 숨기기
+room.hidden = true;
+
+let roomName = '';
+
+function showRoom() {
+  welcome.hidden = true;
+  room.hidden = false;
+
+  const h3 = room.querySelector('h3');
+  h3.innerText = `Room ${roomName}`;
 }
 
-// 웹소켓 연결
-// 클라이언트에서의 socket은 서버로의 연결을 의미
-const socket = new WebSocket(`ws://${window.location.host}`);
-
-// socket이 열렸을 때 발생하는 이벤트
-socket.addEventListener('open', () => {
-  console.log('Connected to Server');
-});
-
-// 서버로부터 메시지를 받았을 때 발생하는 이벤트
-socket.addEventListener('message', message => {
-  // 메시지를 화면에 렌더링
-  const li = document.createElement('li');
-  li.innerText = message.data;
-  msgList.append(li);
-});
-
-// socket 연결이 끊겼을 때 발생하는 이벤트
-socket.addEventListener('close', () => {
-  console.log('Disconnected from Server');
-});
-
-// 일정 시간 후 메시지 보내기
-// setTimeout(() => {
-//   socket.send('hello from the browser');
-// }, 3000);
-
-// 메시지 form 이벤트 처리 & 서버로 메시지 보내기
-msgForm.addEventListener('submit', e => {
+form.addEventListener('submit', e => {
   e.preventDefault();
 
-  const input = msgForm.querySelector('input');
-  socket.send(makeMessage('new_message', input.value));
-  input.value = '';
+  const input = form.querySelector('input');
+  // ws는 send()로 보내야 하며, 전달하는 값은 무조건 문자열이지만,
+  // SocketIO는 emit()으로 이름 상관 없는 커스텀 이벤트를 호출하며, 객체 전달 가능
+  // 마지막 인자로 콜백을 전달할 수 있는데, 이는 서버에서 호출하는 함수임
+  // (서버로 전달할 값은 여러 개 넣을 수 있지만, 콜백은 무조건 마지막에 넣어야 함)
+  // 콜백의 파라미터로 서버에서 받은 값을 사용 가능함
+  // socket.emit('enter_room', { payload: input.value }, msg => {
+  //   console.log(`server says: ${msg}`);
+  // });
+
+  socket.emit('enter_room', input.value, showRoom);
+  roomName = input.value;
+  input.valut = '';
 })
-
-// 닉네임 form 이벤트 처리
-nickForm.addEventListener('submit', e => {
-  e.preventDefault();
-
-  const input = nickForm.querySelector('input');
-  socket.send(makeMessage('nickname', input.value));
-});
